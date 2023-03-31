@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "basic"
+version = "0.1.0"
+description = ""
+authors = ["Mateus Cabral <jmateus@cge.pi.gov.br>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.0"
+uvicorn = "^0.21.1"
+sqlalchemy = "^2.0.7"
+asyncpg = "^0.27.0"
+python-jose = "^3.3.0"
+email-validator = "^1.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
