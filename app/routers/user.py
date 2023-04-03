@@ -1,10 +1,15 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import EmailStr
 from sqlalchemy import select
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from typing import List
 
+from app.configs import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.dependencies import get_session
 
 from app.models.user import UserModel
@@ -12,9 +17,9 @@ from app.models.user import UserModel
 from app.schemas.user import (
     UserListSchema,
     UserCreateSchema,
-    UserBaseSchema
+    UserBaseSchema, Token
 )
-from app.untils import generate_hashed_password
+from app.untils import get_password_hash, authenticate, create_access_token
 
 router = APIRouter(
     prefix='/users',
@@ -56,13 +61,27 @@ async def post_user(usuario: UserCreateSchema, db: AsyncSession = Depends(get_se
         last_name=usuario.last_name,
         username=usuario.username,
         email=usuario.email,
-        password=generate_hashed_password(usuario.password),
-        # date_birth=usuario.date_birth,
-        # is_superuser=usuario.is_superuser,
-        # is_active=usuario.is_active,
+        password=get_password_hash(usuario.password),
     )
 
     async with db as session:
         session.add(novo_usuario)
         await session.commit()
         return novo_usuario
+
+
+@router.post(
+    '/login',
+    summary='Login',
+    description='Authenticate User With Email and Password',
+    response_model=Token
+)
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
+
+    user = await authenticate(EmailStr(form_data.username), form_data.password, db)
+
+    if user:
+        access_token = create_access_token({'sub': user.username}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
+        return {'access_token': access_token, 'token_type': 'bearer'}
+
+    raise HTTPException(detail='Incorrect username or password', status_code=status.HTTP_401_UNAUTHORIZED)
