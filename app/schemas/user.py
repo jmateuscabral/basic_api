@@ -1,14 +1,26 @@
-from datetime import date
-from typing import Optional
+from datetime import date, datetime
 from pydantic import BaseModel, EmailStr
 
 
-class UserSchema(BaseModel):
+class UserListSchema(BaseModel):
 
-    id: Optional[int] = None
-    nome: str
+    username: str
+
+    first_name: str
+    last_name: str
+
     email: EmailStr
-    nascimento: date
+    password: str
+
+    date_birth: date
+
+    is_superuser: bool
+    is_active: bool
+
+    last_login: datetime
 
     class Config:
         orm_mode = True
+
+
+

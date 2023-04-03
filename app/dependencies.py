@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngin
 from sqlalchemy.orm import sessionmaker
 
 
-uri_db: str = 'string de conexao'
+uri_db: str = 'postgresql+asyncpg://postgres:@localhost:5432/basic_api'
 async_engine = create_async_engine(uri_db)
 
 SessionLocal = sessionmaker(

@@ -7,11 +7,16 @@ from .routers import user
 
 # app = FastAPI(dependencies=[Depends(get_query_token)])
 app = FastAPI(
-    title='Basic API'
+    title='Basic API',
+    description='Basic API struct',
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Ocultar Schemas da DOCs
+
 )
 
-app.include_router(user.router)
-app.include_router(admin.router)
+api_v1 = '/api/v1'
+
+app.include_router(user.router, prefix=api_v1)
+# app.include_router(admin.router, prefix=api_v1)
 
 # app.include_router(
 #     admin.router,
@@ -22,6 +27,6 @@ app.include_router(admin.router)
 # )
 
 
-@app.get("/", tags=['Root'])
-async def root():
-    return {"message": "Hello Bigger Applications!"}
+# @app.get("/", tags=['Root'])
+# async def root():
+#     return {"message": "Hello Bigger Applications!"}
