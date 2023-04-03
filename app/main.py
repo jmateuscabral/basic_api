@@ -8,6 +8,7 @@ from .routers import user
 # app = FastAPI(dependencies=[Depends(get_query_token)])
 app = FastAPI(
     title='Basic API',
+    version='0.0.1',
     description='Basic API struct',
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Ocultar Schemas da DOCs
 

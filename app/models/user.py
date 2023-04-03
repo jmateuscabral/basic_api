@@ -15,12 +15,13 @@ class UserModel(Base):
     first_name: Mapped[str] = mapped_column(String(150))
     last_name: Mapped[str] = mapped_column(String(150))
 
-    email: Mapped[str] = mapped_column(String(150), nullable=True)
+    email: Mapped[str] = mapped_column(String(150))
     password: Mapped[str] = mapped_column(String(256))
 
-    date_birth: Mapped[datetime] = mapped_column(Date, nullable=True)
-
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     last_login: Mapped[datetime] = mapped_column(DateTime, nullable=True, default=None)
+
+    date_joined: Mapped[datetime] = mapped_column(Date, default=datetime.now())
