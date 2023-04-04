@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from .routers import user
+from app.routers import user
 from app.configs import API_V1_URI
 
 
