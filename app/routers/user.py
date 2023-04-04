@@ -41,6 +41,8 @@ async def get_users(db: AsyncSession = Depends(get_session)):
             result = await session.execute(query)
             users: List[UserListSchema] = list(result.scalars().all())
             return users
+
+        # Geralmente ocorre se o database estiver inacessível
         except OSError:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
@@ -55,13 +57,17 @@ async def get_users(db: AsyncSession = Depends(get_session)):
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
 
     async with db as session:
-        user = await authenticate(EmailStr(form_data.username), form_data.password, session)
+        try:
+            user = await authenticate(EmailStr(form_data.username), form_data.password, session)
 
-        if user:
-            access_token = create_access_token({'sub': user.username}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
-            return {'access_token': access_token, 'token_type': 'bearer'}
+            if user:
+                access_token = create_access_token({'sub': user.username}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
+                return {'access_token': access_token, 'token_type': 'bearer'}
 
-    raise HTTPException(detail='Incorrect username or password', status_code=status.HTTP_401_UNAUTHORIZED)
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        raise HTTPException(detail='Incorrect username or password', status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 # Create (novo usuário)
@@ -90,6 +96,9 @@ async def post_user(usuario: UserCreateSchema, db: AsyncSession = Depends(get_se
         except IntegrityError:
             raise HTTPException(detail=f'User already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
 
 # Retrieve (ver usuário)
 @router.get(
@@ -102,14 +111,19 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_session)):
 
     async with db as session:
 
-        query = select(UserModel).filter(UserModel.id == int(user_id))
+        try:
 
-        result = await session.execute(query)
-        user: UserBaseSchema = result.scalars().one_or_none()
-        if user:
-            return user
-        else:
-            raise HTTPException(detail='User not found', status_code=status.HTTP_400_BAD_REQUEST)
+            query = select(UserModel).filter(UserModel.id == int(user_id))
+
+            result = await session.execute(query)
+            user: UserBaseSchema = result.scalars().one_or_none()
+            if user:
+                return user
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 # Update (atualizar dados de usuário)
@@ -146,10 +160,13 @@ async def put_user(user_id: int, user_put: UserUpdateSchema, db: AsyncSession = 
                 await session.commit()
                 return user
             else:
-                raise HTTPException(detail='User not found', status_code=status.HTTP_400_BAD_REQUEST)
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         except IntegrityError:
             raise HTTPException(detail=f'User already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 # Delete (remover usuário)
@@ -163,12 +180,17 @@ async def delete_user(user_id: int, db: AsyncSession = Depends(get_session)):
 
     async with db as session:
 
-        query = select(UserModel).filter(UserModel.id == int(user_id))
-        result = await session.execute(query)
-        user: UserBaseSchema = result.scalars().one_or_none()
+        try:
 
-        if user:
-            await session.delete(user)
-            await session.commit()
-        else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+            query = select(UserModel).filter(UserModel.id == int(user_id))
+            result = await session.execute(query)
+            user: UserBaseSchema = result.scalars().one_or_none()
+
+            if user:
+                await session.delete(user)
+                await session.commit()
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
