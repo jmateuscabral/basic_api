@@ -110,11 +110,8 @@ def create_new_user():
 
     _first_name = first_name()
     _last_name = last_name()
-
     _username = username(_first_name, _last_name)
-
     _email = email(_username)
-    # print(f'E-mail: {email}')
 
     new_user = {
         'first_name': _first_name[0],
@@ -123,13 +120,14 @@ def create_new_user():
         'email': _email,
         'password': 1234
     }
+
     json_body = json.dumps(new_user)
-    requests.post('http://127.0.0.1:8000/api/v1/users', data=json_body)
+    requests.post('http://127.0.0.1:8000/api/v1/users/sign-up', data=json_body)
 
 
 if __name__ == '__main__':
 
-    number_new_users = 5
+    number_new_users = 20
 
     for _ in range(number_new_users):
         create_new_user()

@@ -27,11 +27,11 @@ class UserBaseSchema(BaseModel):
 
 class UserListSchema(UserBaseSchema):
 
-    # username: str
+    username: str
 
     first_name: str
     last_name: str
-
+    is_superuser: bool
     email: EmailStr
 
 
