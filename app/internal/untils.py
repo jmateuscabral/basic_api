@@ -10,10 +10,10 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.dependencies import get_session
-from app.models.user import UserModel
-from app.schemas.user import TokenData
-from app.configs import JWT_SECRET_KEY, ALGORITHM, API_V1_URI
+from app.internal.dependencies import get_session
+from app.internal.models.user import UserModel
+from app.internal.schemas.user import TokenData
+from app.internal.configs import JWT_SECRET_KEY, ALGORITHM, API_V1_URI
 
 password_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=F'{API_V1_URI}/users/login')
@@ -58,7 +58,7 @@ async def get_current_user(db: AsyncSession = Depends(get_session), token: str =
 
     async with db as session:
 
-        query = select(UserModel).filter(UserModel.id == int(token_data.username))
+        query = select(UserModel).filter(UserModel.id == token_data.username)
         result = await session.execute(query)
 
         user: UserModel = result.scalars().one_or_none()

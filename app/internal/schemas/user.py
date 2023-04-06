@@ -11,7 +11,8 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str | None = None
+    # id: int | None = None
+    username: int | None = None
 
 
 class UserBaseSchema(BaseModel):
@@ -48,4 +49,14 @@ class UserUpdateSchema(UserBaseSchema):
     username: Optional[str]
     email: Optional[EmailStr]
     password: Optional[str]
-    # date_joined: DateTime = datetime.now()
+    is_superuser: Optional[bool]
+
+
+class UserRetrieveSchema(UserBaseSchema):
+
+    id: Optional[int]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    username: Optional[str]
+    email: Optional[EmailStr]
+    is_superuser: Optional[bool]

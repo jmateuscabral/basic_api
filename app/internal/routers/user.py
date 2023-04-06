@@ -10,17 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from typing import List
 
-from app.configs import ACCESS_TOKEN_EXPIRE_MINUTES
-from app.dependencies import get_session
+from app.internal.configs import ACCESS_TOKEN_EXPIRE_MINUTES
+from app.internal.dependencies import get_session
 
-from app.models.user import UserModel
+from app.internal.models.user import UserModel
 
-from app.schemas.user import (
+from app.internal.schemas.user import (
     UserListSchema,
     UserCreateSchema,
-    UserBaseSchema, Token, UserUpdateSchema
+    UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema
 )
-from app.untils import get_password_hash, authenticate, create_access_token
+from app.internal.untils import get_password_hash, authenticate, create_access_token, get_current_user
 
 router = APIRouter(prefix='/users', tags=['Users'])
 
@@ -33,7 +33,10 @@ router = APIRouter(prefix='/users', tags=['Users'])
     response_model=List[UserListSchema],
     status_code=status.HTTP_200_OK
 )
-async def get_users(db: AsyncSession = Depends(get_session)):
+async def get_users(
+        db: AsyncSession = Depends(get_session),
+        current_users: UserModel = Depends(get_current_user)
+):
 
     async with db as session:
         try:
@@ -54,14 +57,17 @@ async def get_users(db: AsyncSession = Depends(get_session)):
     description='Authenticate user with email and password',
     response_model=Token
 )
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
+async def login(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: AsyncSession = Depends(get_session)
+):
 
     async with db as session:
         try:
             user = await authenticate(EmailStr(form_data.username), form_data.password, session)
 
             if user:
-                access_token = create_access_token({'sub': user.username}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
+                access_token = create_access_token({'sub': str(user.id)}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
                 return {'access_token': access_token, 'token_type': 'bearer'}
 
         except OSError:
@@ -78,7 +84,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     response_model=UserBaseSchema,
     status_code=status.HTTP_201_CREATED
 )
-async def post_user(usuario: UserCreateSchema, db: AsyncSession = Depends(get_session)):
+async def post_user(
+        usuario: UserCreateSchema,
+        db: AsyncSession = Depends(get_session)
+):
 
     novo_usuario: UserModel = UserModel(
         first_name=usuario.first_name,
@@ -105,9 +114,13 @@ async def post_user(usuario: UserCreateSchema, db: AsyncSession = Depends(get_se
     '/{user_id}',
     summary='Retrieve User',
     description='Return a user by ID',
-    response_model=UserBaseSchema
+    response_model=UserRetrieveSchema
 )
-async def get_user(user_id: int, db: AsyncSession = Depends(get_session)):
+async def get_user(
+        user_id: int,
+        db: AsyncSession = Depends(get_session),
+        current_users: UserModel = Depends(get_current_user)
+):
 
     async with db as session:
 
@@ -131,9 +144,14 @@ async def get_user(user_id: int, db: AsyncSession = Depends(get_session)):
     '/{user_id}',
     summary='Update User',
     description='Update and return a user by ID',
-    response_model=UserBaseSchema,
+    response_model=UserRetrieveSchema,
 )
-async def put_user(user_id: int, user_put: UserUpdateSchema, db: AsyncSession = Depends(get_session)):
+async def put_user(
+        user_id: int,
+        user_put: UserUpdateSchema,
+        db: AsyncSession = Depends(get_session),
+        current_users: UserModel = Depends(get_current_user)
+):
 
     async with db as session:
         try:
@@ -157,6 +175,9 @@ async def put_user(user_id: int, user_put: UserUpdateSchema, db: AsyncSession = 
                 if user_put.password:
                     user.password = get_password_hash(user_put.password)
 
+                if user_put.is_superuser:
+                    user.is_superuser = user_put.is_superuser
+
                 await session.commit()
                 return user
             else:
@@ -176,7 +197,11 @@ async def put_user(user_id: int, user_put: UserUpdateSchema, db: AsyncSession = 
     description='Delete a user by ID',
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_user(user_id: int, db: AsyncSession = Depends(get_session)):
+async def delete_user(
+        user_id: int,
+        db: AsyncSession = Depends(get_session),
+        current_users: UserModel = Depends(get_current_user)
+):
 
     async with db as session:
 

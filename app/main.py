@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-from app.routers import user
-from app.configs import API_V1_URI
+from app.internal.routers import user
+from app.internal.configs import API_V1_URI
 
 
 app = FastAPI(
