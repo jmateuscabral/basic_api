@@ -7,7 +7,7 @@ from app.internal.configs import API_V1_URI
 
 app = FastAPI(
     title='Basic API',
-    version='0.0.1',
+    version='0.0.2',
     description='Basic API struct',
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Ocultar Schemas da DOCs
 )
