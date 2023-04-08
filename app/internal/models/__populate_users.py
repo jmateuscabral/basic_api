@@ -1,3 +1,12 @@
+"""
+
+Script para gerar alguns usuários e inserir via API
+
+Deve ser executado diretamente
+
+"""
+
+
 import json
 from random import choice
 
@@ -27,10 +36,10 @@ first_names_male = [
 ]
 
 first_names_female = [
-    'Laura',
     'Aparecida',
     'Gabriella',
     'Bruna',
+    'Laura',
     'Ana',
     'Alice',
     'Fernanda',

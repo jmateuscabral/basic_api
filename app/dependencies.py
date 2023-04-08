@@ -1,13 +1,13 @@
-from os import environ
-from typing import Annotated, Generator, AsyncIterator
+from typing import Annotated, Generator
 
 from fastapi import Header, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, AsyncEngine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.configs import Settings
 
-uri_db: str = 'postgresql+asyncpg://postgres:@localhost:5432/basic_api'
-async_engine = create_async_engine(uri_db)
+async_engine = create_async_engine(Settings.database_url)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -19,11 +19,11 @@ SessionLocal = sessionmaker(
 
 
 async def get_session() -> Generator:
-    db = SessionLocal()
+    db: AsyncSession = SessionLocal()
     try:
         yield db
     except HTTPException:
-        db.rollback()
+        await db.rollback()
     # finally:
     #     db.close()
 
