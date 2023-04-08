@@ -4,7 +4,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
 
     app_name: str = 'Basic API'
-    app_version: str = '0.0.1'
+    app_version: str = '0.0.2'
     app_description: str = 'Astro API - Controladoria-Geral do Estado do Piauí'
 
     admin_email: str = 'jmateus@sefaz.pi.gov.br'
