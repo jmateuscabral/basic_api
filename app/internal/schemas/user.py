@@ -1,8 +1,5 @@
 from typing import Optional
-
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import DateTime
-from datetime import datetime
 
 
 class Token(BaseModel):
@@ -11,8 +8,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    # id: int | None = None
-    username: int | None = None
+    username: str | None = None
 
 
 class UserBaseSchema(BaseModel):
@@ -39,7 +35,11 @@ class UserListSchema(UserBaseSchema):
 class UserCreateSchema(UserBaseSchema):
 
     password: str
-    # date_joined: DateTime = datetime.now()
+
+
+class UserRetrieveSchema(UserBaseSchema):
+
+    is_superuser: bool
 
 
 class UserUpdateSchema(UserBaseSchema):
@@ -49,14 +49,4 @@ class UserUpdateSchema(UserBaseSchema):
     username: Optional[str]
     email: Optional[EmailStr]
     password: Optional[str]
-    is_superuser: Optional[bool]
-
-
-class UserRetrieveSchema(UserBaseSchema):
-
-    id: Optional[int]
-    first_name: Optional[str]
-    last_name: Optional[str]
-    username: Optional[str]
-    email: Optional[EmailStr]
-    is_superuser: Optional[bool]
+    is_superuser: bool

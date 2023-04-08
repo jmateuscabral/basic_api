@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from typing import List
 
-from app.internal.configs import ACCESS_TOKEN_EXPIRE_MINUTES
-from app.internal.dependencies import get_session
+from app.configs import Settings
+from app.dependencies import get_session
 
 from app.internal.models.user import UserModel
 
@@ -20,7 +20,7 @@ from app.internal.schemas.user import (
     UserCreateSchema,
     UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema
 )
-from app.internal.untils import get_password_hash, authenticate, create_access_token, get_current_user
+from app.internal.authentication.auth import get_password_hash, authenticate, create_access_token, get_current_user
 
 router = APIRouter(prefix='/users', tags=['Users'])
 
@@ -33,10 +33,7 @@ router = APIRouter(prefix='/users', tags=['Users'])
     response_model=List[UserListSchema],
     status_code=status.HTTP_200_OK
 )
-async def get_users(
-        db: AsyncSession = Depends(get_session),
-        current_users: UserModel = Depends(get_current_user)
-):
+async def get_users(db: AsyncSession = Depends(get_session), current_user: UserModel = Depends(get_current_user)):
 
     async with db as session:
         try:
@@ -57,17 +54,19 @@ async def get_users(
     description='Authenticate user with email and password',
     response_model=Token
 )
-async def login(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: AsyncSession = Depends(get_session)
-):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
 
     async with db as session:
         try:
             user = await authenticate(EmailStr(form_data.username), form_data.password, session)
-
+            # token_valido = True
             if user:
-                access_token = create_access_token({'sub': str(user.id)}, timedelta(ACCESS_TOKEN_EXPIRE_MINUTES))
+                # if not token_valido:
+                access_token = create_access_token(
+                    {'sub': user.username},
+                    timedelta(minutes=Settings.access_token_expire_minutes)
+                )
+
                 return {'access_token': access_token, 'token_type': 'bearer'}
 
         except OSError:
@@ -84,10 +83,7 @@ async def login(
     response_model=UserBaseSchema,
     status_code=status.HTTP_201_CREATED
 )
-async def post_user(
-        usuario: UserCreateSchema,
-        db: AsyncSession = Depends(get_session)
-):
+async def post_user(usuario: UserCreateSchema, db: AsyncSession = Depends(get_session)):
 
     novo_usuario: UserModel = UserModel(
         first_name=usuario.first_name,
@@ -103,7 +99,7 @@ async def post_user(
             await session.commit()
             return novo_usuario
         except IntegrityError:
-            raise HTTPException(detail=f'User already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+            raise HTTPException(detail='Username or Email already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
         except OSError:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -119,7 +115,7 @@ async def post_user(
 async def get_user(
         user_id: int,
         db: AsyncSession = Depends(get_session),
-        current_users: UserModel = Depends(get_current_user)
+        current_user: UserModel = Depends(get_current_user)
 ):
 
     async with db as session:
@@ -129,7 +125,7 @@ async def get_user(
             query = select(UserModel).filter(UserModel.id == int(user_id))
 
             result = await session.execute(query)
-            user: UserBaseSchema = result.scalars().one_or_none()
+            user: UserRetrieveSchema = result.scalars().one_or_none()
             if user:
                 return user
             else:
@@ -150,7 +146,7 @@ async def put_user(
         user_id: int,
         user_put: UserUpdateSchema,
         db: AsyncSession = Depends(get_session),
-        current_users: UserModel = Depends(get_current_user)
+        current_user: UserModel = Depends(get_current_user)
 ):
 
     async with db as session:
@@ -200,8 +196,11 @@ async def put_user(
 async def delete_user(
         user_id: int,
         db: AsyncSession = Depends(get_session),
-        current_users: UserModel = Depends(get_current_user)
+        current_user: UserModel = Depends(get_current_user)
 ):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
 

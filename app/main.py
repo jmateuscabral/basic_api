@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
 from app.internal.routers import user
-from app.internal.configs import API_V1_URI
+from app.configs import Settings
 
 
 app = FastAPI(
-    title='Basic API',
-    version='0.0.2',
-    description='Basic API struct',
+    title=Settings.app_name,
+    version=Settings.app_version,
+    description=Settings.app_description,
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Ocultar Schemas da DOCs
 )
 
@@ -18,5 +18,4 @@ async def root():
     return RedirectResponse('/docs')
 
 
-app.include_router(user.router, prefix=API_V1_URI)
-# app.include_router(admin.router, prefix=api_v1)
+app.include_router(user.router, prefix=Settings.api_v1_uri)
