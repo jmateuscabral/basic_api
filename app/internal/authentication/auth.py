@@ -44,7 +44,7 @@ async def get_current_user(db: AsyncSession = Depends(get_session), token: str =
 
     try:
 
-        payload = jwt.decode(token=token, key=Settings.jwt_secret_key, algorithms=[Settings.algorithm])
+        payload = jwt.decode(token=token, key=Settings.jwt_secret_key, algorithms=[Settings.algorithm_jwt])
 
         username: str = payload.get('sub')
 
@@ -94,5 +94,5 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=30)
     to_encode.update({'exp': expire})
-    encoded_jwt = jwt.encode(to_encode, Settings.jwt_secret_key, algorithm=Settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, Settings.jwt_secret_key, algorithm=Settings.algorithm_jwt)
     return encoded_jwt
