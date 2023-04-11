@@ -5,9 +5,9 @@ class Settings(BaseSettings):
 
     app_name: str = 'Basic API'
     app_version: str = '0.0.2'
-    app_description: str = 'Astro API - Controladoria-Geral do Estado do Piauí'
+    app_description: str = 'Basic API - Basic Struct API'
 
-    admin_email: str = 'jmateus@sefaz.pi.gov.br'
+    admin_email: str = 'admin@basic.api'
     items_per_user: int = 50
 
     api_v1_uri = '/api/v1'

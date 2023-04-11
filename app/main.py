@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.responses import RedirectResponse
 
-from app.internal.routers import user
+from app.internal.routers import user, group
 from app.configs import Settings
 
 
@@ -19,3 +19,4 @@ async def root():
 
 
 app.include_router(user.router, prefix=Settings.api_v1_uri)
+app.include_router(group.router, prefix=Settings.api_v1_uri)
