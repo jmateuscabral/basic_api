@@ -33,7 +33,17 @@ router = APIRouter(prefix='/users', tags=['Users'])
     response_model=List[UserListSchema],
     status_code=status.HTTP_200_OK
 )
-async def get_users(db: AsyncSession = Depends(get_session), current_user: UserModel = Depends(get_current_user)):
+async def get_users(
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user)
+):
+
+    """
+    - Usuários is_superuser == True podem visualizar a lista de usuários
+    """
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
         try:
@@ -118,6 +128,16 @@ async def get_user(
         current_user: UserModel = Depends(get_current_user)
 ):
 
+    """
+    - Usuários is_superuser == True podem visualizar qualquer usuário
+    - Usuários comuns podem visualizar apenas seu próprio usuário
+    """
+
+    if not current_user.is_superuser:
+
+        if user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
     async with db as session:
 
         try:
@@ -149,6 +169,25 @@ async def put_user(
         current_user: UserModel = Depends(get_current_user)
 ):
 
+    """
+    - Usuários is_superuser == True podem alterar qualquer usuário
+    - Usuários comuns podem alterar apenas seu próprio usuário
+    - Usuários comuns não podem alterar o status is_superuser
+    """
+
+    if not current_user.is_superuser:
+
+        if user_id != current_user.id:
+            raise HTTPException(
+                # detail='Unable to change another user', status_code=status.HTTP_401_UNAUTHORIZED
+                status_code=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if user_put.is_superuser is not None:
+            raise HTTPException(
+                detail='Only admins can change superuser value', status_code=status.HTTP_401_UNAUTHORIZED
+            )
+
     async with db as session:
         try:
             query = select(UserModel).filter(UserModel.id == int(user_id))
@@ -156,22 +195,22 @@ async def put_user(
             user: UserUpdateSchema = result.scalars().one_or_none()
 
             if user:
-                if user_put.first_name:
+                if user_put.first_name is not None:
                     user.first_name = user_put.first_name
 
-                if user_put.last_name:
+                if user_put.last_name is not None:
                     user.last_name = user_put.last_name
 
-                if user_put.username:
+                if user_put.username is not None:
                     user.username = EmailStr(user_put.username)
 
-                if user_put.email:
+                if user_put.email is not None:
                     user.email = EmailStr(user_put.email)
 
-                if user_put.password:
+                if user_put.password is not None:
                     user.password = get_password_hash(user_put.password)
 
-                if user_put.is_superuser:
+                if user_put.is_superuser is not None:
                     user.is_superuser = user_put.is_superuser
 
                 await session.commit()
@@ -199,8 +238,15 @@ async def delete_user(
         current_user: UserModel = Depends(get_current_user)
 ):
 
+    """
+    - Usuários is_superuser == True podem deletar qualquer usuário
+    - Usuários comuns podem deletar apenas seu próprio usuário
+    """
+
     if not current_user.is_superuser:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        if user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
 

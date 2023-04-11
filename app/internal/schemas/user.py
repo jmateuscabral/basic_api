@@ -49,4 +49,4 @@ class UserUpdateSchema(UserBaseSchema):
     username: Optional[str]
     email: Optional[EmailStr]
     password: Optional[str]
-    is_superuser: bool
+    is_superuser: Optional[bool]
