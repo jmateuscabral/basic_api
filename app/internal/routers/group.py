@@ -10,7 +10,8 @@ from app.dependencies import get_session
 from app.internal.models.group import GroupModel
 
 from app.internal.models.user import UserModel
-from app.internal.schemas.group import GroupSchema
+from app.internal.schemas.group import GroupBaseSchema, GroupCreateSchema, GroupListSchema, GroupRetrieveSchema, \
+    GroupUpdateSchema
 
 from app.internal.authentication.auth import get_current_user
 
@@ -22,16 +23,22 @@ router = APIRouter(prefix='/groups', tags=['Groups'])
     '/',
     summary='All Groups',
     description='Return all groups or an empty list',
-    response_model=List[GroupSchema],
+    response_model=List[GroupListSchema],
     status_code=status.HTTP_200_OK
 )
-async def get_groups(db: AsyncSession = Depends(get_session)):
+async def get_groups(
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user),
+):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
         try:
             query = select(GroupModel).order_by('name')
             result = await session.execute(query)
-            groups: List[GroupSchema] = list(result.scalars().all())
+            groups: List[GroupListSchema] = list(result.scalars().all())
             return groups
 
         # Geralmente ocorre se o database estiver inacessível
@@ -44,10 +51,17 @@ async def get_groups(db: AsyncSession = Depends(get_session)):
     '/',
     summary='Create Group',
     description='Add and return new group',
-    response_model=GroupSchema,
+    response_model=GroupRetrieveSchema,
     status_code=status.HTTP_201_CREATED
 )
-async def post_user(grupo: GroupSchema, db: AsyncSession = Depends(get_session)):
+async def post_group(
+        grupo: GroupCreateSchema,
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user),
+):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     novo_grupo: GroupModel = GroupModel(
         name=grupo.name,
@@ -59,7 +73,7 @@ async def post_user(grupo: GroupSchema, db: AsyncSession = Depends(get_session))
             await session.commit()
             return novo_grupo
         except IntegrityError:
-            raise HTTPException(detail='Username or Email already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
+            raise HTTPException(detail='Group already exists', status_code=status.HTTP_406_NOT_ACCEPTABLE)
 
         except OSError:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -70,12 +84,16 @@ async def post_user(grupo: GroupSchema, db: AsyncSession = Depends(get_session))
     '/{group_id}',
     summary='Retrieve Group',
     description='Return a group by ID',
-    response_model=GroupSchema
+    response_model=GroupRetrieveSchema
 )
 async def get_group(
         group_id: int,
-        db: AsyncSession = Depends(get_session)
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user),
 ):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
 
@@ -84,7 +102,7 @@ async def get_group(
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
 
             result = await session.execute(query)
-            group: GroupSchema = result.scalars().one_or_none()
+            group: GroupRetrieveSchema = result.scalars().one_or_none()
             if group:
                 return group
             else:
@@ -99,19 +117,23 @@ async def get_group(
     '/{group_id}',
     summary='Update Group',
     description='Update and return a group by ID',
-    response_model=GroupSchema,
+    response_model=GroupRetrieveSchema,
 )
-async def put_user(
+async def put_group(
         group_id: int,
-        group_put: GroupSchema,
+        group_put: GroupUpdateSchema,
         db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user),
 ):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     async with db as session:
         try:
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
             result = await session.execute(query)
-            group: GroupSchema = result.scalars().one_or_none()
+            group: GroupUpdateSchema = result.scalars().one_or_none()
 
             if group:
                 if group_put.name:
@@ -136,7 +158,7 @@ async def put_user(
     description='Delete a group by ID',
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_user(
+async def delete_group(
         group_id: int,
         db: AsyncSession = Depends(get_session),
         current_user: UserModel = Depends(get_current_user)
@@ -151,7 +173,7 @@ async def delete_user(
 
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
             result = await session.execute(query)
-            group: GroupSchema = result.scalars().one_or_none()
+            group: GroupBaseSchema = result.scalars().one_or_none()
 
             if group:
                 await session.delete(group)
