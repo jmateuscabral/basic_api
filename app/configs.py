@@ -1,4 +1,5 @@
 from pydantic import BaseSettings
+from os import environ
 
 
 class Settings(BaseSettings):
@@ -12,12 +13,12 @@ class Settings(BaseSettings):
 
     api_v1_uri = '/api/v1'
 
-    # access_token_expire_minutes = 60 * 24 * 7
-    access_token_expire_minutes = 30
-    jwt_secret_key = 'eAIozClf3otBH2Dp05tqWgiIqzGK_4tLTKFkP3Lz6zM'
-    algorithm = 'HS256'
+    # Uma Semana = Minutos * Horas * Dias
+    access_token_expire_minutes = 60 * 24 * 7
+    jwt_secret_key: str = environ.get('astro_jwt_secret_key')
+    algorithm_jwt: str = environ.get('astro_algorithm_jwt')
 
-    database_url = 'postgresql+asyncpg://postgres:@localhost:5432/basic_api'
+    database_url: str = environ.get('astro_database_url')
 
     # class Config:
     #     env_file = ".env"
