@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 from sqlalchemy import select
@@ -8,10 +8,11 @@ from sqlalchemy.exc import IntegrityError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
-from typing import List
+from typing import List, Annotated, Optional
 
 from app.configs import Settings
 from app.dependencies import get_session
+from app.internal.models.user import GroupModel
 
 from app.internal.models.user import UserModel
 
@@ -33,13 +34,16 @@ router = APIRouter(prefix='/users', tags=['Users'])
     response_model=List[UserListSchema],
     status_code=status.HTTP_200_OK
 )
-async def get_users(db: AsyncSession = Depends(get_session), current_user: UserModel = Depends(get_current_user)):
+async def get_users(
+        db: AsyncSession = Depends(get_session),
+        current_user: Annotated[UserModel, Security(get_current_user, scopes=[])] = Optional,
+):
 
     async with db as session:
         try:
             query = select(UserModel).order_by('first_name')
             result = await session.execute(query)
-            users: List[UserListSchema] = list(result.scalars().all())
+            users: List[UserListSchema] = list(result.scalars().unique().all())
             return users
 
         # Geralmente ocorre se o database estiver inacessível
@@ -54,18 +58,42 @@ async def get_users(db: AsyncSession = Depends(get_session), current_user: UserM
     description='Authenticate user with email and password',
     response_model=Token
 )
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_session)):
+async def login(
+        db: AsyncSession = Depends(get_session),
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()] = Optional,
+):
+
+    # asfdasdf
+
+    async with db as session:
+        try:
+            # query = select(GroupModel).order_by('name')
+            query = select(GroupModel).order_by('name')
+            result = await session.execute(query)
+            # groups: List[GroupRetrieveSchema] = list(result.scalars().all())
+            # print(f'groups: {groups}')
+
+        # Geralmente ocorre se o database estiver inacessível
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    # asfdasdf
 
     async with db as session:
         try:
             user = await authenticate(EmailStr(form_data.username), form_data.password, session)
+            form_data.scopes = ['all', 'users']
+            user_scopes: list[str] = []
+
             # token_valido = True
             if user:
                 # if not token_valido:
                 access_token = create_access_token(
-                    {'sub': user.username},
+                    {'sub': user.username, 'scopes': user_scopes},
                     timedelta(minutes=Settings.access_token_expire_minutes)
                 )
+
+                print(f'user: {user}\n')
 
                 return {'access_token': access_token, 'token_type': 'bearer'}
 
@@ -125,8 +153,15 @@ async def get_user(
             query = select(UserModel).filter(UserModel.id == int(user_id))
 
             result = await session.execute(query)
-            user: UserRetrieveSchema = result.scalars().one_or_none()
+            user: UserRetrieveSchema = result.scalars().unique().one_or_none()
+
+            # groups = await session.execute(query)
+            # print(f'groups {groups.scalars().unique()}')
+
             if user:
+                # print(f'User retrieve: {user}')
+                # for group in current_user.groups:
+                #     print(f'User retrieve: {group.}')
                 return user
             else:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)

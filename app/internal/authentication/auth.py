@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import EmailStr
+from pydantic import EmailStr, ValidationError
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
@@ -16,7 +16,14 @@ from app.internal.schemas.user import TokenData
 from app.configs import Settings
 
 password_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=F'{Settings.api_v1_uri}/users/sign-in')
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=F'{Settings.api_v1_uri}/users/sign-in',
+    scopes={
+        'me': 'Read information about the current user.',
+        'groups': 'Read groups.'
+    }
+)
 
 
 def get_password_hash(password: str) -> str:
@@ -34,7 +41,16 @@ Authentication
 """
 
 
-async def get_current_user(db: AsyncSession = Depends(get_session), token: str = Depends(oauth2_scheme)) -> UserModel:
+async def get_current_user(
+        db: AsyncSession = Depends(get_session),
+        security_scopes: SecurityScopes = Optional,
+        token: str = Depends(oauth2_scheme),
+) -> UserModel:
+
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = 'Bearer'
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,9 +67,10 @@ async def get_current_user(db: AsyncSession = Depends(get_session), token: str =
         if username is None:
             raise credentials_exception
 
-        token_data = TokenData(username=username)
+        token_scopes = payload.get('scopes', [])
+        token_data = TokenData(username=username, scopes=token_scopes)
 
-    except JWTError:
+    except (JWTError, ValidationError):
         raise credentials_exception
 
     async with db as session:
@@ -62,10 +79,18 @@ async def get_current_user(db: AsyncSession = Depends(get_session), token: str =
         query = select(UserModel).filter(UserModel.username == token_data.username)
         result = await session.execute(query)
 
-        user: UserModel = result.scalars().one_or_none()
+        user: UserModel = result.scalars().unique().one_or_none()
 
         if user is None:
             raise credentials_exception
+
+        for scope in security_scopes.scopes:
+            if scope not in token_data.scopes:
+                raise HTTPException(
+                    detail='Not enough permissions',
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    headers={"WWW-Authenticate": authenticate_value},
+                )
 
         return user
 
@@ -76,7 +101,7 @@ async def authenticate(email: EmailStr, password: str, db: AsyncSession = Depend
 
         query = select(UserModel).filter(UserModel.email == email)
         result = await session.execute(query)
-        user: UserModel = result.scalars().one_or_none()
+        user: UserModel = result.scalars().unique().one_or_none()
 
         if not user:
             return None

@@ -7,7 +7,8 @@ from starlette import status
 from typing import List
 
 from app.dependencies import get_session
-from app.internal.models.group import GroupModel
+from app.internal.models.user import GroupModel
+# from app.internal.models.group import GroupModel
 
 from app.internal.models.user import UserModel
 from app.internal.schemas.group import GroupBaseSchema, GroupCreateSchema, GroupListSchema, GroupRetrieveSchema, \
@@ -38,7 +39,8 @@ async def get_groups(
         try:
             query = select(GroupModel).order_by('name')
             result = await session.execute(query)
-            groups: List[GroupListSchema] = list(result.scalars().all())
+            # groups: List[GroupListSchema] = list(result.scalars().all())
+            groups: List[GroupListSchema] = list(result.scalars().unique())
             return groups
 
         # Geralmente ocorre se o database estiver inacessível
@@ -102,7 +104,7 @@ async def get_group(
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
 
             result = await session.execute(query)
-            group: GroupRetrieveSchema = result.scalars().one_or_none()
+            group: GroupRetrieveSchema = result.scalars().unique().one_or_none()
             if group:
                 return group
             else:
@@ -133,7 +135,7 @@ async def put_group(
         try:
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
             result = await session.execute(query)
-            group: GroupUpdateSchema = result.scalars().one_or_none()
+            group: GroupUpdateSchema = result.scalars().unique().one_or_none()
 
             if group:
                 if group_put.name:
@@ -173,7 +175,7 @@ async def delete_group(
 
             query = select(GroupModel).filter(GroupModel.id == int(group_id))
             result = await session.execute(query)
-            group: GroupBaseSchema = result.scalars().one_or_none()
+            group: GroupBaseSchema = result.scalars().unique().one_or_none()
 
             if group:
                 await session.delete(group)
