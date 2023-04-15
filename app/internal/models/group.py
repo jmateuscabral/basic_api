@@ -1,21 +1,25 @@
 from typing import List
 
 from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.internal.models.__base import Base
 
 
-# class GroupModel(Base):
-#
-#     __tablename__ = 'auth_group'
-#
-#     name: Mapped[str] = mapped_column(String(150), unique=True)
-#
-#     users: Mapped[List['UserModel']] = relationship(
-#         secondary=user_groups,
-#         back_populates='groups'
-#     )
-#
-#     def __repr__(self):
-#         return f'<GroupModel: {self.name}>'
+class GroupModel(Base):
+
+    __tablename__ = "auth_group"
+
+    name: Mapped[str] = mapped_column(String(150), unique=True)
+
+    users: Mapped[List["UserModel"]] = relationship(
+        secondary="auth_users_groups",
+        back_populates="groups",
+        lazy="joined",
+        viewonly=True,
+    )
+
+    user_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="group")
+
+    def __repr__(self):
+        return f'<GroupModel: {self.name}>'

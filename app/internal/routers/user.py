@@ -12,7 +12,7 @@ from typing import List, Annotated, Optional
 
 from app.configs import Settings
 from app.dependencies import get_session
-from app.internal.models.user import GroupModel
+from app.internal.models.group import GroupModel
 
 from app.internal.models.user import UserModel
 from app.internal.schemas.group import GroupListSchema
@@ -20,7 +20,7 @@ from app.internal.schemas.group import GroupListSchema
 from app.internal.schemas.user import (
     UserListSchema,
     UserCreateSchema,
-    UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema, UserGroupsRetrieveSchema
+    UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema
 )
 from app.internal.authentication.auth import get_password_hash, authenticate, create_access_token, get_current_user
 

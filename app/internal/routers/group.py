@@ -7,7 +7,7 @@ from starlette import status
 from typing import List
 
 from app.dependencies import get_session
-from app.internal.models.user import GroupModel
+from app.internal.models.group import GroupModel
 # from app.internal.models.group import GroupModel
 
 from app.internal.models.user import UserModel
