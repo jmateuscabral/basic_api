@@ -12,9 +12,10 @@ from app.internal.models.user import GroupModel
 
 from app.internal.models.user import UserModel
 from app.internal.schemas.group import GroupBaseSchema, GroupCreateSchema, GroupListSchema, GroupRetrieveSchema, \
-    GroupUpdateSchema
+    GroupUpdateSchema, GroupUsersRetrieveSchema
 
 from app.internal.authentication.auth import get_current_user
+from app.internal.schemas.user import UserListSchema
 
 router = APIRouter(prefix='/groups', tags=['Groups'])
 
@@ -107,6 +108,46 @@ async def get_group(
             group: GroupRetrieveSchema = result.scalars().unique().one_or_none()
             if group:
                 return group
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Retrieve usuários de um grupo
+@router.get(
+    '/{group_id}/users/',
+    summary='Retrieve Group',
+    description='Return a group by ID',
+    response_model=List[UserListSchema]
+)
+async def get_group_users(
+        group_id: int,
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user),
+):
+
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    async with db as session:
+
+        try:
+
+            group_query = select(GroupModel).filter(GroupModel.id == group_id)
+            group_result = await session.execute(group_query)
+            group = group_result.scalars().unique().one_or_none()
+
+            if group is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+            query = select(UserModel).filter(UserModel.groups.contains(group))
+            result = await session.execute(query)
+            users: List[UserListSchema] = list(result.scalars().unique())
+
+            if users is not None:
+                return users
             else:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 

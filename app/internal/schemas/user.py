@@ -43,6 +43,13 @@ class UserRetrieveSchema(UserBaseSchema):
     is_superuser: bool
 
 
+class UserGroupsRetrieveSchema(UserBaseSchema):
+    # Resolve error "Circular Imports"
+    from app.internal.schemas.group import GroupRetrieveSchema
+    is_superuser: bool
+    groups: list[GroupRetrieveSchema]
+
+
 class UserUpdateSchema(UserBaseSchema):
 
     first_name: Optional[str]

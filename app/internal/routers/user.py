@@ -15,11 +15,12 @@ from app.dependencies import get_session
 from app.internal.models.user import GroupModel
 
 from app.internal.models.user import UserModel
+from app.internal.schemas.group import GroupListSchema
 
 from app.internal.schemas.user import (
     UserListSchema,
     UserCreateSchema,
-    UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema
+    UserBaseSchema, Token, UserUpdateSchema, UserRetrieveSchema, UserGroupsRetrieveSchema
 )
 from app.internal.authentication.auth import get_password_hash, authenticate, create_access_token, get_current_user
 
@@ -155,14 +156,45 @@ async def get_user(
             result = await session.execute(query)
             user: UserRetrieveSchema = result.scalars().unique().one_or_none()
 
-            # groups = await session.execute(query)
-            # print(f'groups {groups.scalars().unique()}')
-
             if user:
-                # print(f'User retrieve: {user}')
-                # for group in current_user.groups:
-                #     print(f'User retrieve: {group.}')
                 return user
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        except OSError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+# Retrieve Grupos do Usuário
+@router.get(
+    '/{user_id}/groups/',
+    summary='Retrieve a Users Groups',
+    description='Returns all groups for the user ID',
+    response_model=List[GroupListSchema]
+)
+async def get_user_groups(
+        user_id: int,
+        db: AsyncSession = Depends(get_session),
+        current_user: UserModel = Depends(get_current_user)
+):
+
+    async with db as session:
+
+        try:
+
+            user_query = select(UserModel).filter(UserModel.id == user_id)
+            user_result = await session.execute(user_query)
+            user = user_result.scalars().unique().one_or_none()
+
+            if user is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+            query = select(GroupModel).filter(GroupModel.users.contains(user)).order_by('name')
+            result = await session.execute(query)
+            groups: List[GroupListSchema] = list(result.scalars().unique())
+
+            if groups is not None:
+                return groups
             else:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
