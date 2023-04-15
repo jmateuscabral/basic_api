@@ -79,12 +79,16 @@ from app.internal.models.__base import Base
 
 
 class Association(Base):
+
     __tablename__ = "auth_user_groups"
+
     auth_user_id: Mapped[int] = mapped_column(ForeignKey("auth_user.id"), primary_key=True)
     auth_group_id: Mapped[int] = mapped_column(ForeignKey("auth_group.id"), primary_key=True)
+
     extra_data: Mapped[Optional[str]]
-    user: Mapped[UserModel] = relationship(back_populates="groups")
-    group: Mapped[GroupModel] = relationship(back_populates="users")
+
+    user: Mapped[UserModel] = relationship(back_populates="group_associations")
+    group: Mapped[GroupModel] = relationship(back_populates="user_associations")
 
 
 class UserModel(Base):
@@ -105,7 +109,11 @@ class UserModel(Base):
 
     last_login: Mapped[datetime] = mapped_column(DateTime, nullable=True, default=None)
 
-    groups: Mapped[List[Association]] = relationship(back_populates="user", lazy="joined")
+    # groups: Mapped[List[Association]] = relationship(back_populates="user", lazy="joined")
+
+    groups: Mapped[List[GroupModel]] = relationship(secondary="auth_user_groups", back_populates="users")
+
+    group_associations: Mapped[List[Association]] = relationship(back_populates="group")
 
     def __repr__(self):
         return f'<UserModel: {self.first_name}>'
@@ -117,7 +125,11 @@ class GroupModel(Base):
 
     name: Mapped[str] = mapped_column(String(150), unique=True)
 
-    users: Mapped[List[Association]] = relationship(back_populates="group", lazy="joined")
+    # users: Mapped[List[Association]] = relationship(back_populates="group", lazy="joined")
+
+    users: Mapped[List[UserModel]] = relationship(secondary="auth_user_users", back_populates="users")
+
+    user_associations: Mapped[List[Association]] = relationship(back_populates="user")
 
     def __repr__(self):
         return f'<GroupModel: {self.name}>'
