@@ -16,6 +16,7 @@ class GroupModel(Base):
         secondary="auth_users_groups",
         back_populates="groups",
         lazy="joined",
+        # passive_deletes=True,
         viewonly=True,
     )
 

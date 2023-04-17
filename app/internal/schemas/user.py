@@ -2,6 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -25,8 +26,8 @@ class UserBaseSchema(BaseModel):
 
 class UserListSchema(UserBaseSchema):
 
+    # id: int
     username: str
-
     first_name: str
     last_name: str
     is_superuser: bool
@@ -39,11 +40,14 @@ class UserCreateSchema(UserBaseSchema):
 
 
 class UserRetrieveSchema(UserBaseSchema):
-
+    # from app.internal.schemas.group import GroupRetrieveSchema
+    # id: int
     is_superuser: bool
+    # groups: list[GroupRetrieveSchema]
 
 
 class UserGroupsRetrieveSchema(UserBaseSchema):
+    from app.internal.schemas.group import GroupRetrieveSchema
     # Resolve error "Circular Imports"
     from app.internal.schemas.group import GroupRetrieveSchema
     is_superuser: bool
@@ -57,4 +61,4 @@ class UserUpdateSchema(UserBaseSchema):
     username: Optional[str]
     email: Optional[EmailStr]
     password: Optional[str]
-    is_superuser: bool
+    is_superuser: Optional[bool]

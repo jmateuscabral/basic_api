@@ -35,7 +35,9 @@ class UserModel(Base):
         secondary="auth_users_groups",
         back_populates="users",
         lazy="joined",
-        viewonly=True,
+        # cascade="delete",
+        # cascade="delete",
+        # viewonly=True,
     )
 
     group_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="user")
