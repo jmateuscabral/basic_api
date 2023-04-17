@@ -26,5 +26,5 @@ class UsersGroups(Base):
 
     extra_data: Mapped[Optional[str]]
 
-    user: Mapped["UserModel"] = relationship(back_populates="group_associations")
-    group: Mapped["GroupModel"] = relationship(back_populates="user_associations")
+    user: Mapped["UserModel"] = relationship(back_populates="group_user_associations")
+    group: Mapped["GroupModel"] = relationship(back_populates="user_group_associations")

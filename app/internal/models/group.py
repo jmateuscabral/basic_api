@@ -20,7 +20,7 @@ class GroupModel(Base):
         viewonly=True,
     )
 
-    user_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="group")
+    user_group_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="group")
 
     def __repr__(self):
         return f'<GroupModel: {self.name}>'

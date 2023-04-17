@@ -1,25 +1,23 @@
 from typing import List
 
-from sqlalchemy import String, Table, ForeignKey, Column
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.internal.models.__base import Base
-from app.internal.models.group import GroupModel
-
-
-group_permissions = Table(
-    'auth_group_permissions',
-    Base.metadata,
-    Column('group_id', ForeignKey('auth_group.id')),
-    Column('permission_id', ForeignKey('auth_permission.id')),
-)
 
 
 class PermissionModel(Base):
 
-    __tablename__ = 'auth_permission'
+    __tablename__ = "auth_permission"
 
     name: Mapped[str] = mapped_column(String(150), unique=True)
-    codename: Mapped[str] = mapped_column(String(150), unique=True)
 
-    groups: Mapped[List[GroupModel]] = relationship('GroupModel', secondary=group_permissions, backref='auth_group', lazy='dynamic')
+    groups: Mapped[List["GroupModel"]] = relationship(
+        secondary="auth_permissions_groups",
+        back_populates="permissions",
+        lazy="joined",
+        viewonly=True,
+    )
+
+    def __repr__(self):
+        return f'<PermissionModel: {self.name}>'

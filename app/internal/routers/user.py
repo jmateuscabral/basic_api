@@ -83,6 +83,11 @@ async def login(
         try:
             user = await authenticate(EmailStr(form_data.username), form_data.password, session)
 
+            query_groups = select(GroupModel).filter(GroupModel.users.contains(user)).order_by('name')
+            result_groups = await session.execute(query_groups)
+            groups: List[GroupModel] = list(result_groups.scalars().unique())
+            print(f'groups: {groups}')
+
             user_scopes: list[str] = [
 
                 'user_list',

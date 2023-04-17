@@ -37,10 +37,10 @@ class UserModel(Base):
         lazy="joined",
         # cascade="delete",
         # cascade="delete",
-        # viewonly=True,
+        viewonly=True,
     )
 
-    group_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="user")
+    group_user_associations: Mapped[List["UsersGroups"]] = relationship(back_populates="user")
 
     def __repr__(self):
         return f'<UserModel: {self.first_name}>'
